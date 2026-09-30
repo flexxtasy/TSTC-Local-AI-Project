@@ -1,0 +1,23 @@
+# Local model files and checkpoints
+models/
+*.gguf
+*.safetensors
+*.pt
+*.pth
+
+# Credentials and local settings
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Keep GPU-incident diagnostic bundles and local crash data off public GitHub.
+# Review any other exported journal/status text for campus identifiers before adding it.
+*.log
+*.log.gz
+*.core
+core
+nvidia-bug-report*
+__pycache__/
+*.pyc
