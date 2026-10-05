@@ -1,6 +1,6 @@
 # TSTC Local AI Project
 
-A local LLM for authorized cybersecurity labs and NCL practice. This records **what we actually set up and tested** on the school PC, the commands used or provided along the way, and the GPU failure that interrupted the setup. The first model is an abliterated Qwen3.8-27B GGUF; Qwen3.8-Flash-Next and multi-PC pooling are later experiments.
+A local LLM for authorized cybersecurity labs and NCL practice. This records **what we actually set up and tested** on the school PC, the commands used or provided along the way, and the results. **Phase 1** was an abliterated Qwen3.8-27B GGUF on llama.cpp. **Phase 2 (measured October 5, 2026)** runs Qwen3.8-Flash-Next — a 125B mixture-of-experts model — on [Strata](https://github.com/Niko1221/Strata) at **80.4 tok/s on a single RTX 5090**; see the Phase 2 section below. The September 30 GPU incident has since been resolved (details at the end).
 
 ## Setup at a glance (September 30, 2026)
 
@@ -9,7 +9,7 @@ A local LLM for authorized cybersecurity labs and NCL practice. This records **w
 - **Model:** `huihui-ai/Huihui-Qwen3.8-27B-abliterated-GGUF`, `Huihui-Qwen3.8-27B-abliterated-Q6_K_L.gguf`.
 - **Agent:** Hermes Agent through the local OpenAI-compatible Chat Completions endpoint, model ID `huihui-qwen3.8-27b`.
 - **What worked before the incident:** The model loaded on the GPU; the endpoint advertised 65K, then 192K context in the recorded checks; Hermes generated short responses at the 192K *configuration*, including through a systemd user service.
-- **Current limitation:** Following the GPU incident described **at the end of this file**, the operator says GPU usability has been restored by a **temporary fix** and the user service was temporarily taken out of use. We do not have post-recovery commands or output confirming the precise service-file/enabled state, the recovery method, or that the model is currently running. A longer-term fix and restoration of the service are planned, not completed.
+- **GPU incident, resolved:** The September 30 Xid 79 event described at the end of this file has been resolved; the GPU has been stable since, including through a 9.5-minute sustained Phase 2 inference run at 37 °C with no recurrence. The GPU power limit is held at 450 W as a precaution.
 
 This is a lab record, not a claim that a near-192K prompt, reliable tool use, model checksum, or later auto-start were tested.
 
@@ -131,10 +131,45 @@ For ordinary operation, `systemctl --user stop school-llm.service` unloads the m
 
 The repo should contain documentation and reproducible, sanitized results, **not** weights, passwords/API tokens, campus IPs/hostnames, raw diagnostic bundles, or private notes. This project does not yet specify a license for its own repository contents; an upstream model license is a separate matter.
 
-## GPU issue, temporary workaround, and planned restoration
+## GPU incident (September 30, 2026) — resolved
 
-On **September 30, 2026**, the school PC's kernel log showed a **correctable PCIe physical-layer receive error** at **14:25:39 CDT**, followed by NVIDIA **Xid 79 — “GPU has fallen off the bus”** at **14:25:40 CDT**. `nvidia-smi` subsequently could not query the card (`Unable to determine the device handle ... Unknown Error`; `No devices were found`), although `lspci` still listed the RTX 5090 with the NVIDIA driver bound. Seeing the card in `lspci` did not mean the GPU was usable. The log then showed the model service loading at **14:26:01** and stopping at **14:28:38**. The bus failure was logged **before** the service stop, so the recorded stop did not cause that Xid.
+On **September 30, 2026**, the school PC's kernel log showed a **correctable PCIe physical-layer receive error** at **14:25:39 CDT**, followed by NVIDIA **Xid 79 — "GPU has fallen off the bus"** at **14:25:40 CDT**. `nvidia-smi` could not query the card (`Unable to determine the device handle ... Unknown Error`), although `lspci` still listed the RTX 5090 with the NVIDIA driver bound. The model service loaded at **14:26:01** and stopped at **14:28:38**; the bus failure was logged **before** that stop, so the service stop did not cause the Xid.
 
-We stopped using the `school-llm.service` user service as a **temporary precaution** during troubleshooting. The operator reports having **turned it off / removed it temporarily**; the last captured unit-status output (immediately after the stop) still showed the file present and the unit enabled, so we cannot say from these logs whether the file was later removed, the unit was disabled, or both. The operator later reported that the GPU is working again with a **temporary fix**, but did not capture the recovery steps or post-recovery `nvidia-smi` output here. **The underlying cause of Xid 79 is still unknown.** We have not verified that the service was restored or that Hermes is currently serving requests.
+**Resolution:** the GPU was restored and has been stable since. The most demanding test to date — the Phase 2 Strata run below, a continuous 9.5-minute generation at the 450 W power limit — completed with the GPU holding **37 °C and no Xid recurrence**, and with zero disk-read stalls. The root cause was not formally diagnosed, and the 450 W power cap (below the 576 W stock TDP) is kept in place as a precaution. Xid 79 is NVIDIA's "GPU has fallen off the bus" event; see [NVIDIA's Xid catalog](https://docs.nvidia.com/deploy/xid-errors/analyzing-xid-catalog.html) for its description.
 
-The next step is to develop a more durable fix, confirm stable GPU health, and **then** reinstate and test the systemd service. We will update this record with the actual fix, unit state, and fresh test output when available. Xid 79 is NVIDIA's “GPU has fallen off the bus” event; see [NVIDIA's Xid catalog](https://docs.nvidia.com/deploy/xid-errors/analyzing-xid-catalog.html) for its description.
+---
+
+## Phase 2 — Strata with UD-Q4_K_XL (measured, October 5, 2026)
+
+Phase 1 ran a 27B model on llama.cpp. **Phase 2 runs Qwen3.8-Flash-Next — a 125B mixture-of-experts model — in Unsloth's UD-Q4_K_XL quantization on [Strata](https://github.com/Niko1221/Strata), on a single consumer GPU.**
+
+**Why this is hard, and why this PC:** UD-Q4_K_XL has 71.7 GiB of routed expert weights — far more than fits in a 32 GB GPU. Strata keeps a resident budget of those experts in system RAM (`RAM − 24 GB`, capped at the full 71.7 GiB) and streams only the ones each token needs onto the GPU. On a 64 GB machine most experts are read from the SSD on every token, which caps this quant at **7–8.5 tok/s**. With 192 GB of RAM, every expert stays resident and nothing is read from disk during inference — the first hardware class where this quant runs at full speed.
+
+### Configuration
+`--expert-cache auto --prefill auto --spec 4 --spec-min-p 0.5 --mtp rt --max-context 131072 --kv int8 --resident-budget-gib 71`, served OpenAI-compatible on loopback (`127.0.0.1:8080`), consumed through Hermes Agent.
+
+### Measured results
+
+A single sustained generation — 45,469 output tokens over 566.6 s at 131K-token context:
+
+| Metric | Value |
+|---|---:|
+| **Sustained decode** | **80.4 tok/s** |
+| Median of 554 engine samples | 80.6 tok/s (range 53.3–87.3) |
+| Prefill | 136 tok/s |
+| Expert cache in VRAM | 7,534 experts · 22.0 GiB |
+| VRAM expert-cache hit rate | 90.9% (6.3% of routed experts over PCIe) |
+| **Disk read during the 9.5-minute run** | **0.0 MB/s — zero SSD spillover** |
+| System RAM used | 62.4 / 188 GB |
+| GPU temperature / power | 37 °C @ 450 W |
+| Cold-start warm-up | 53.3 tok/s first sample → ~80 by 14 s |
+
+This result is at 131K context; the model is trained for 256K, so the window can be doubled — measurement at full depth is the next step.
+
+### What the numbers show
+- **80.4 tok/s on a 125B model, one consumer GPU, at a reduced 450 W power limit.** That is **~2.6×** the only comparable published figure for this quant (31 tok/s on an RTX 3090 + 165 GB, from Strata's docs) and **~10×** what it does on a 64 GB machine.
+- **0.0 MB/s disk read for the whole run** is the proof the design works: with 192 GB of RAM, no expert is ever read from the SSD during inference.
+- A calibration sweep found a **non-obvious optimum**: letting ~20% of the expert computation go over PCIe to the CPU is **+8.9% faster** than forcing everything onto the GPU, and pushing it to 75% is slower than 0% — a real optimum, not a trend. On a 5090 + 192 GB rig the CPU/RAM path is an asset, not a bottleneck.
+
+### Honesty notes
+These are informal measurements from the engine log and server UI, under a reasoning-heavy workload (~65% of output was reasoning tokens) — not the formal greedy-decode protocol. The protocol run (greedy, 256-token cap, 3 runs each at 4K/32K/128K, with telemetry) is still to be recorded before submitting these as a community benchmark to the Strata project.
