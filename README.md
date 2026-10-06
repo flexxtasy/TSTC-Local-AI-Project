@@ -173,3 +173,12 @@ This result is at 131K context; the model is trained for 256K, so the window can
 
 ### Honesty notes
 These are informal measurements from the engine log and server UI, under a reasoning-heavy workload (~65% of output was reasoning tokens) — not the formal greedy-decode protocol. The protocol run (greedy, 256-token cap, 3 runs each at 4K/32K/128K, with telemetry) is still to be recorded before submitting these as a community benchmark to the Strata project.
+
+## Update — October 6, 2026: 256K context, Hermes deployment, a Kali tool node
+
+- **Context doubled to 256K.** Raised `--max-context` to 262144 (the model's trained length); `/v1/models` confirms `n_ctx: 262144`. Sustained decode held at **~79.8 tok/s** with prefill around **1,966 tok/s** — the window doubled from 131K with no meaningful speed cost.
+- **Deployed through Hermes Agent.** Wired Strata in as the default model over the OpenAI Chat Completions dialect, so the assistant talks to the local 125B directly.
+- **Runs as a service now.** Strata is a systemd user service (`strata.service`) that starts on boot and restarts on failure — no terminal needs to stay open. The unit uses `KillMode=control-group` so stopping it also reaps the child inference engine instead of orphaning it on the GPU.
+- **Second machine as a security tool node.** A separate workstation (RTX 4090, Kali Linux) is reachable from the AI host over a private [Tailscale](https://tailscale.com/) network via OpenSSH, **set up with help from cyber-club member Gilbert.** This lets the assistant drive the full Kali toolset for **authorized lab and NCL practice** on that box, keeping the 5090 dedicated to inference — no port forwarding, no public exposure. All activity is confined to authorized lab systems and CTF/NCL practice ranges.
+
+**Next:** the formal greedy-decode benchmark at 256K, and evaluating an abliterated GSQ-RCO build for uncensored, vision-capable lab work.
