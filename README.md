@@ -1,6 +1,6 @@
 # TSTC Local AI Project
 
-A local LLM for authorized cybersecurity labs and NCL practice. This records **what we actually set up and tested** on the school PC, the commands used or provided along the way, and the results. **Phase 1** was an abliterated Qwen3.8-27B GGUF on llama.cpp. **Phase 2 (measured October 5, 2026)** runs Qwen3.8-Flash-Next — a 125B mixture-of-experts model — on [Strata](https://github.com/Niko1221/Strata) at **80.4 tok/s on a single RTX 5090**; see the Phase 2 section below. The September 30 GPU incident has since been resolved (details at the end).
+A local LLM for authorized cybersecurity labs and NCL practice. This records **what we actually set up and tested** on the school PC, the commands used or provided along the way, and the results. **Phase 1** was an abliterated Qwen3.8-27B GGUF on llama.cpp. **Phase 2 (measured October 5, 2026)** runs Qwen3.8-Flash-Next — a 125B mixture-of-experts model — on [Strata](https://github.com/Niko1221/Strata) at **80.4 tok/s on a single RTX 5090**. **Phase 3 (October 7, 2026)** replaces it with an **abliterated, vision-capable** build of the same model at **~100–160 tok/s** — now the live model. See the phase sections below. The September 30 GPU incident has since been resolved (details at the end).
 
 ## Setup at a glance (September 30, 2026)
 
@@ -182,3 +182,24 @@ These are informal measurements from the engine log and server UI, under a reaso
 - **Second machine as a security tool node.** A separate workstation (RTX 4090, Kali Linux) is reachable from the AI host via **OpenSSH**, **set up by cyber-club member Gilbert.** This lets the assistant drive the full Kali toolset for **authorized lab and NCL practice** on that box, keeping the 5090 dedicated to inference. All activity is confined to authorized lab systems and CTF/NCL practice ranges.
 
 **Next:** the formal greedy-decode benchmark at 256K, and evaluating an abliterated GSQ-RCO build for uncensored, vision-capable lab work.
+
+## Phase 3 — abliterated IQ3_S, uncensored + vision (October 7, 2026)
+
+Phase 3 makes the lab model **uncensored and vision-capable**, and it is now the **live model** — it replaces the Phase 2 UD-Q4_K_XL on the running service.
+
+**Model:** an **abliterated** build of Qwen3.8-Flash-Next in Strata's native GSQ-RCO format, quantization **IQ3_S** (the highest-quality quant Strata offers). "Abliterated" means the model's refusal direction is suppressed with a runtime control vector, so it will engage with refusal-prone security questions instead of declining them.
+
+**Why this model for a cyber lab:**
+- **Uncensored** — NCL and red-team practice routinely trip a stock model's safety refusals on legitimate, authorized security questions; the abliterated build answers them.
+- **Vision** — IQ3_S ships the BF16 vision encoder, so the assistant can read **screenshots and evidence images** (packet captures, scoreboard shots, forensic artifacts). The Phase 2 UD-Q4_K_XL was text-only.
+
+**Setup notes:**
+- Installed through Strata's normal `setup.sh` flow (it's a native GSQ-RCO GGUF), with the vision encoder on the GPU and the refusal-direction control vector supplied as an experimental speed-projection input.
+- **256K context** (`--max-context 262144`), with the **KV cache pinned in system RAM** (~3.6 GB) so the full window fits even when VRAM is full of expert weights.
+- Wired into Hermes Agent as the default model, same as Phase 2.
+
+**Measured speed:** **~100–160 tok/s** decode (short-context runs peaked around **167 tok/s**, with prefill in the thousands of tok/s) — roughly **2× the Phase 2 UD-Q4_K_XL**. The reason is quantization size: IQ3_S's experts are small enough that the RTX 5090's 32 GB caches nearly all of them in VRAM, so far less expert traffic crosses PCIe than with the 4-bit UD build.
+
+**Honesty note:** as with Phase 2, these are informal in-use measurements, not the formal greedy-decode protocol; the protocol run is still the next benchmarking step.
+
+**Trade-off vs Phase 2:** IQ3_S is ~3.5-bit vs UD-Q4_K_XL's ~4-bit, so slightly lower precision per weight — in exchange for the uncensored behavior, vision, and ~2× the speed. For this lab's workload that's the right trade.
