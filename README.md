@@ -203,3 +203,14 @@ Phase 3 makes the lab model **uncensored and vision-capable**, and it is now the
 **Honesty note:** as with Phase 2, these are informal in-use measurements, not the formal greedy-decode protocol; the protocol run is still the next benchmarking step.
 
 **Trade-off vs Phase 2:** IQ3_S is ~3.5-bit vs UD-Q4_K_XL's ~4-bit, so slightly lower precision per weight — in exchange for the uncensored behavior, vision, and ~2× the speed. For this lab's workload that's the right trade.
+
+## Use case — BACnet HVAC lab (in progress, October 2026)
+
+The first full project built on this AI stack is an **operational-technology (OT) security lab**. Classmate **Rick** built a **BACnet** building-automation system that controls an HVAC setup. BACnet is the standard protocol that building controllers use to talk to each other. The plan has two halves:
+
+1. **Attack:** use the local model through Hermes, with the Kali tool node, to discover and pentest the BACnet system. The goal is to see how far an AI-assisted operator gets against a protocol that was designed for trusted networks.
+2. **Build and defend:** design a complete control interface for the system, then harden it based on what the attack found.
+
+**Authorization:** we own and control this system, it is an isolated lab, and we have permission to attack it for pentesting practice and to practice using AI tools. Nothing here touches production building systems or networks we don't control.
+
+**Status:** in progress — no results recorded yet. Findings, captures, and the interface will be documented as they happen, and they will be sanitized the same way as the rest of this repo. If the lab outgrows this README, it moves to its own repository, with a link here.
