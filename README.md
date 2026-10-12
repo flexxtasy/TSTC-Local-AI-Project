@@ -203,3 +203,14 @@ Phase 3 makes the lab model **uncensored and vision-capable**, and it is now the
 **Honesty note:** as with Phase 2, these are informal in-use measurements, not the formal greedy-decode protocol; the protocol run is still the next benchmarking step.
 
 **Trade-off vs Phase 2:** IQ3_S is ~3.5-bit vs UD-Q4_K_XL's ~4-bit, so slightly lower precision per weight — in exchange for the uncensored behavior, vision, and ~2× the speed. For this lab's workload that's the right trade.
+
+## Status update — October 12 (Carlos)
+
+Picking up where Phase 3 left off. Quick status from the school PC:
+
+- The model service has been up since October 7 without babysitting it —
+  it's set to start on boot and hasn't needed a manual restart since the
+  October 6 setup, so the service setup looks solid (a reboot test is still
+  pending).
+- Strata got updated to v0.1.41 on October 8. Nothing here needed changing
+  for the update; the model runs the same as before.
