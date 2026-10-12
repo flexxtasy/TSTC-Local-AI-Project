@@ -2,6 +2,26 @@
 
 A local LLM for authorized cybersecurity labs and NCL practice. This records **what we actually set up and tested** on the school PC, the commands used or provided along the way, and the results. **Phase 1** was an abliterated Qwen3.8-27B GGUF on llama.cpp. **Phase 2 (measured October 5, 2026)** runs Qwen3.8-Flash-Next — a 125B mixture-of-experts model — on [Strata](https://github.com/Niko1221/Strata) at **80.4 tok/s on a single RTX 5090**. **Phase 3 (October 7, 2026)** replaces it with an **abliterated, vision-capable** build of the same model at **~100–160 tok/s** — now the live model. See the phase sections below. The September 30 GPU incident has since been resolved (details at the end).
 
+## Authorization & ethics
+
+This is a local, loopback-only LLM deployment for **authorized** cybersecurity
+lab work and NCL / CTF practice. A few deliberate choices and their reasoning:
+
+- **Why an abliterated (refusal-suppressed) model:** stock safety filters
+  routinely refuse legitimate, authorized security questions (exploit analysis,
+  tooling, CTF challenges). The abliterated build engages with those so the
+  model is actually useful for coursework — it is a research and learning tool,
+  not a means to cause harm.
+- **Scope:** all security tooling driven from this stack is confined to systems
+  we own or are explicitly authorized to test (lab ranges, CTF/NCL practice
+  environments). No activity against third-party or production systems.
+- **Containment:** the inference API is bound to `127.0.0.1` only and
+  API-key-gated; nothing is exposed to the public internet, and no model weights,
+  credentials, campus IPs/hostnames, or private notes live in this repository.
+
+Use of any model is subject to its upstream license and the user's own
+responsibility for how it is applied.
+
 ## Setup at a glance (September 30, 2026)
 
 - **PC:** CachyOS with KDE Plasma, Intel Core i9-14900KS, NVIDIA RTX 5090 (32 GiB-class VRAM), 192 GB installed RAM. No switch to the other operating systems proposed in an earlier draft was made.
