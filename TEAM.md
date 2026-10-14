@@ -17,5 +17,8 @@ cybersecurity lab work and NCL / CTF practice.
 - **Carlos Leal** — co-author. Verified the live deployment and kept the
   project's working status documented.
   [LinkedIn](https://www.linkedin.com/in/carlos-leal-4b69843aa/)
+- **Lazaro Tamez** — co-author. Verified the live deployment and kept the
+  project's working status documented.
+  [LinkedIn](https://www.linkedin.com/in/lazaro-tamez-b67256114/)
 - **Gilbert** — set up the Kali Linux tool node (RTX 4090), reachable over SSH
   for authorized security tooling.
