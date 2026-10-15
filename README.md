@@ -252,8 +252,7 @@ The pending reboot test from the October 12 update is done:
 
 ### Formal benchmark run (the long-pending protocol, first results)
 
-Protocol: OpenAI-compatible endpoint on `127.0.0.1:8080`, model
-`qwen3.8-flash-next-iq3_s`, `temperature=0` (greedy), single run each, numbers
+Model `qwen3.8-flash-next-iq3_s`, `temperature=0` (greedy), single run each, numbers
 taken from the **server-reported `timings`** (not wall-clock guesses). Engine
 configuration at test time: speculative decoding `--spec 4`, int8 KV cache,
 `--max-context 262144`.
@@ -279,8 +278,9 @@ directly comparable to these server-reported rates.
 ### What the cluster is actually used for now
 
 Since October 12 this machine and the remote Kali box have been doing real
-lab work through Hermes agent sessions: full-port reconnaissance of the
-classroom LAN (`206.51.62.128/25`, 17 hosts), guest-read pulls from the
+lab work through Hermes agent sessions: guest-read pulls from the
 class NAS (forensic FTK report + club training docs), the REA
 reverse-engineering toolchain, and the Hashtopilis and Flag Forge lab
-projects. The model serves as the agent brain for that work.
+projects. The model serves as the agent brain for that work. 
+Having the tool assist in work for NCL as it is open source and currently 
+training it based off the gymnasium to give it context for future challenges. 
